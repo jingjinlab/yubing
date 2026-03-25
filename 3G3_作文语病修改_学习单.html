@@ -1,0 +1,1593 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta charset="UTF-8">
+    <style>*,*:before,*:after{box-sizing:border-box}input:not([type="checkbox"]):not([type="radio"]),textarea,select{border:none!important;outline:none!important;-webkit-appearance:none!important;appearance:none!important;}</style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课堂学习单</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        @page { size: A4; margin: 12mm; }
+
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", "SimSun", sans-serif;
+            font-size: 10.5pt;
+            line-height: 1.75;
+            background: #edf0f4;
+            color: #1a1a1a;
+        }
+
+        /* ══ 工具栏 ══ */
+        .toolbar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            background: #fff;
+            border-bottom: 0.5px solid #d4dae3;
+            padding: 10px 28px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            z-index: 1000;
+            flex-wrap: wrap;
+        }
+        .toolbar.editing {
+            background: #eef4fb;
+            border-bottom: 1.5px solid #2e86c1;
+        }
+        .edit-hint {
+            display: none;
+            font-size: 9pt;
+            color: #2e86c1;
+            margin-left: 4px;
+            font-style: italic;
+        }
+        .toolbar.editing .edit-hint { display: inline; }
+
+        .toolbar-sep {
+            width: 1px;
+            height: 22px;
+            background: #d4dae3;
+            margin: 0 6px;
+        }
+
+        .btn {
+            padding: 7px 18px;
+            border-radius: 6px;
+            border: none;
+            background: rgba(255,255,255,0.08);
+            color: #e8edf2;
+            font-size: 10pt;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.18s;
+            white-space: nowrap;
+            letter-spacing: 0.01em;
+        }
+
+        /* 编辑 — 青蓝色 */
+        .btn.primary {
+            background: #2e86c1;
+            color: #fff;
+            border: none;
+        }
+        .btn.primary:hover { background: #2574a9; }
+
+        /* 另存为 — 绿色 */
+        .btn.accent {
+            background: #1e8449;
+            color: #fff;
+            border: none;
+        }
+        .btn.accent:hover { background: #196f3d; }
+
+        /* 打印 — 橙琥珀色 */
+        .btn.print {
+            background: #b7770d;
+            color: #fff;
+            border: none;
+        }
+        .btn.print:hover { background: #9c6409; }
+
+        .btn.tpl { background: #fff; color: #555; border: 0.5px solid #c0cad8; }
+        .btn.tpl.active { background: #1a2a3a; color: #fff; border-color: #1a2a3a; }
+
+        /* ══ 下拉模板菜单 ══ */
+        .tpl-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .tpl-btn {
+            padding: 7px 14px;
+            border-radius: 6px;
+            border: none;
+            background: #1a4f8a;
+            color: #fff;
+            font-size: 10pt;
+            cursor: pointer;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            white-space: nowrap;
+            transition: all 0.18s;
+            letter-spacing: 0.01em;
+        }
+        .tpl-btn:hover { background: #154077; }
+        .tpl-btn .arrow { font-size: 8pt; color: rgba(255,255,255,0.7); transition: transform 0.18s; }
+        .tpl-btn.open .arrow { transform: rotate(180deg); }
+        .tpl-btn.open .arrow { transform: rotate(180deg); }
+        .tpl-menu {
+            display: none;
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            background: #fff;
+            border: 0.5px solid #d0d8e4;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+            min-width: 190px;
+            z-index: 2000;
+            overflow: hidden;
+        }
+        .tpl-menu.open { display: block; }
+        .tpl-option {
+            padding: 10px 16px;
+            font-size: 10pt;
+            color: #2c3e50;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            transition: background 0.12s;
+        }
+        .tpl-option:hover { background: #f0f6fc; }
+        .tpl-option.selected {
+            background: #eaf3fb;
+            color: #1a4070;
+            font-weight: 600;
+            border-left: 3px solid #2e86c1;
+            padding-left: 13px;
+        }
+        .tpl-option + .tpl-option { border-top: 0.5px solid #edf0f4; }
+
+        /* ══ 页面容器 ══ */
+        .page {
+            /* display controlled by JS inline style */
+        }
+
+        /* ══════════════════════════════
+           课堂研学学习单 样式
+        ══════════════════════════════ */
+        #page-ketang,
+        #page-miaoxie,
+        #page-yilun,
+        #page-shiyong,
+        #page-yuedu {
+            max-width: 210mm;
+            margin: 56px auto 24px;
+            padding: 10mm 14mm 14mm;
+            background: #fff;
+            min-height: 297mm;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+
+        [contenteditable="true"]:focus {
+            outline: 1px dashed #4a7fc1;
+            background: rgba(74,127,193,0.05);
+            border-radius: 2px;
+        }
+
+        .page-header { margin-bottom: 14px; }
+        .header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 7px;
+        }
+        .main-title {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            font-size: 16pt;
+            font-weight: 600;
+            color: #1a2a3a;
+            letter-spacing: 0.5px;
+        }
+        .title-icon {
+            width: 30px; height: 30px;
+            background: #dae8f7;
+            border-radius: 7px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            flex-shrink: 0;
+        }
+        .student-fields {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            font-size: 10pt;
+            color: #444;
+            white-space: nowrap;
+        }
+        .field-line {
+            display: inline-block;
+            min-width: 76px;
+            border-bottom: 0.5px solid #888;
+            margin-left: 3px;
+        }
+        .divider {
+            height: 1px;
+            background: #b0bcc8;
+            margin: 7px 0 11px;
+        }
+        .goal-box {
+            background: #eef4fb;
+            border-radius: 6px;
+            padding: 9px 14px;
+            margin-bottom: 14px;
+            font-size: 10.5pt;
+            color: #1a4070;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+        }
+        .goal-dot {
+            width: 9px; height: 9px;
+            border-radius: 50%;
+            background: #4a7fc1;
+            flex-shrink: 0;
+        }
+        .activity {
+            border: 0.5px solid #d0dae8;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+        .activity.featured { border-color: #a8c4e0; }
+        .act-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 7px 14px;
+            background: #f4f7fb;
+            border-bottom: 0.5px solid #d0dae8;
+        }
+        .act-head.featured {
+            background: #eef4fb;
+            border-bottom-color: #a8c4e0;
+        }
+        .act-label { display: flex; align-items: center; gap: 9px; }
+        .act-num {
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            background: #d0e3f5;
+            color: #1a4070;
+            font-size: 10.5pt;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .act-num.featured { background: #4a7fc1; color: #fff; }
+        .act-name { font-size: 11pt; font-weight: 600; color: #1a2a3a; }
+        .act-body { padding: 10px 14px 12px; }
+        .task-note {
+            font-size: 9.5pt;
+            color: #555;
+            background: #f4f7fb;
+            border-radius: 5px;
+            padding: 6px 10px;
+            margin-bottom: 9px;
+            line-height: 1.65;
+        }
+        .inst-text { font-size: 10pt; color: #333; margin-bottom: 4px; }
+        .writing-line {
+            display: block;
+            border: none;
+            border-bottom: 0.5px solid #b0b8c4;
+            height: 30px;
+            margin: 6px 0;
+        }
+        .writing-box {
+            border: 0.5px solid #c0cad8;
+            border-radius: 5px;
+            min-height: 108px;
+            margin: 8px 0;
+            padding: 8px 10px;
+            line-height: 2;
+        }
+        .check-row {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 10pt;
+            color: #444;
+            margin-top: 6px;
+        }
+        .check-row input[type="checkbox"] {
+            width: 14px; height: 14px;
+            accent-color: #4a7fc1;
+            cursor: pointer;
+        }
+        .bridge {
+            font-size: 9pt;
+            color: #aaa;
+            margin-top: 9px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .bridge::before {
+            content: '';
+            display: inline-block;
+            width: 18px;
+            height: 0.5px;
+            background: #ccc;
+        }
+        .peer-grid {
+            display: grid;
+            grid-template-columns: 3fr 2fr;
+            gap: 14px;
+            margin-top: 6px;
+        }
+        .peer-label { font-size: 9.5pt; color: #555; margin-bottom: 3px; }
+        .summary-box {
+            border: 0.5px solid #e0c97a;
+            background: #fdf8ec;
+            border-radius: 7px;
+            padding: 10px 14px;
+            margin-top: 4px;
+        }
+        .summary-label {
+            font-size: 10pt;
+            color: #7a6000;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+        .summary-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: #c9a800;
+            flex-shrink: 0;
+        }
+
+        /* ══════════════════════════════
+           表达精进学习单 — 两页设计
+        ══════════════════════════════ */
+
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC&display=swap');
+
+        #page-biaoda {
+            width: 210mm;
+            margin: 56px auto 0;
+            background: transparent;
+            display: flex;
+            flex-direction: column;
+            gap: 64px;
+        }
+
+        /* 与课堂研学完全相同的页面容器 */
+        .bd-page {
+            max-width: 210mm;
+            background: #fff;
+            min-height: 297mm;
+            padding: 10mm 14mm 14mm;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+
+        /* ── 页眉：与课堂研学完全一致 ── */
+        .bd-page-header { margin-bottom: 14px; }
+        .bd-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 7px;
+        }
+        .bd-main-title {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            font-size: 13pt;
+            font-weight: 400;
+            color: #1a2a3a;
+            letter-spacing: 0.5px;
+        }
+        .bd-title-icon {
+            width: 30px; height: 30px;
+            background: #dae8f7;
+            border-radius: 7px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 15px; flex-shrink: 0;
+        }
+        .bd-student-fields {
+            display: flex; align-items: center;
+            gap: 18px; font-size: 10pt;
+            color: #444; white-space: nowrap;
+        }
+        .bd-field-line {
+            display: inline-block; min-width: 76px;
+            border-bottom: 0.5px solid #888; margin-left: 3px;
+        }
+        .bd-divider {
+            height: 1px; background: #b0bcc8;
+            margin: 7px 0 11px;
+        }
+
+        /* 提醒条：与 goal-box 完全一致 */
+        .bd-alert-row {
+            background: #eef4fb;
+            border-radius: 6px;
+            padding: 9px 14px;
+            margin-bottom: 14px;
+            font-size: 10.5pt;
+            color: #1a4070;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+        }
+        .bd-alert-row strong { font-weight: 600; }
+
+        /* 各节：与 activity 完全一致 */
+        .bd-sec-row {
+            border: 0.5px solid #d0dae8;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+        .bd-sec-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 7px 14px;
+            background: #f4f7fb;
+            border-bottom: 0.5px solid #d0dae8;
+        }
+        .bd-sec-row.r1 .bd-sec-head { background: #f4f7fb; }
+        .bd-sec-row.r2 .bd-sec-head { background: #f0fbf6; border-bottom-color: #b0dece; }
+        .bd-sec-row.r3 .bd-sec-head { background: #f4f3fe; border-bottom-color: #c8c4f0; }
+        .bd-sec-row.r4 .bd-sec-head { background: #fdf6ec; border-bottom-color: #e0c97a; }
+
+        .bd-sec-badge-wrap { display: flex; align-items: center; gap: 9px; }
+        .bd-sec-badge {
+            width: 22px; height: 22px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10.5pt; font-weight: 600; flex-shrink: 0;
+        }
+        .bd-sec-row.r1 .bd-sec-badge { background: #d0e3f5; color: #1a4070; }
+        .bd-sec-row.r2 .bd-sec-badge { background: #b0dece; color: #085041; }
+        .bd-sec-row.r3 .bd-sec-badge { background: #c8c4f0; color: #3C3489; }
+        .bd-sec-row.r4 .bd-sec-badge { background: #e0c97a; color: #633806; }
+
+        .bd-sec-title { font-size: 11pt; font-weight: 600; color: #1a2a3a; }
+
+        .bd-sec-inner {
+            padding: 10px 14px 12px;
+        }
+
+        .bd-field { display: flex; flex-direction: column; gap: 3px; margin-bottom: 6px; }
+        .bd-field-label { font-size: 10pt; color: #333; display: flex; align-items: center; gap: 5px; }
+        .bd-field-divider { border: none; margin: 4px 0; }
+        .bd-wline { display: block; border-bottom: 0.5px solid #b0b8c4; height: 26px; }
+
+        /* 病句横线 */
+        .bd-bingju-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .bd-bingju-wline { display: block; border-bottom: 0.5px solid #b0b8c4; height: 26px; margin-top: 4px; }
+
+        /* 手写格：与 writing-box 同逻辑 */
+        .bd-canvas-row-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px; width: 100%;
+        }
+        .bd-canvas-cell {
+            height: 60px;
+            border-radius: 6px;
+            box-shadow: 0 0 0 1px rgba(160,175,195,0.45);
+            background: transparent;
+            cursor: crosshair; touch-action: none;
+            display: block; width: 100%;
+            position: relative;
+        }
+        .bd-canvas-cell.wrong {
+            box-shadow: 0 0 0 0.5px rgba(200,100,100,0.25);
+        }
+
+
+        .bd-wrong-row { display: flex; align-items: flex-end; gap: 8px; }
+        .bd-copy-row  { display: flex; align-items: flex-end; gap: 8px; width: 100%; }
+        .bd-copy-row .bd-canvas-row-3 { flex: 1; }
+
+        .bd-canvas-clear {
+            font-size: 7.5pt; color: #888;
+            background: #fff; border: 0.5px solid #c0cad8;
+            border-radius: 4px; padding: 3px 6px; cursor: pointer;
+            white-space: nowrap; flex-shrink: 0;
+            display: flex; align-items: center; gap: 3px;
+            align-self: flex-end;
+        }
+        .bd-canvas-clear:hover { color: #c0392b; border-color: #e74c3c; }
+
+        /* ── 第2页：同样页面风格 ── */
+        .bd-p2-body {
+            padding: 0;
+            flex: 1; display: flex; flex-direction: column;
+        }
+        .bd-p2-task {
+            font-size: 10pt; color: #1a4a3a; font-weight: 500;
+            margin-bottom: 14px; flex-shrink: 0;
+            background: #e8f5ee; border-radius: 6px;
+            padding: 9px 14px;
+        }
+        .bd-share-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 10px; flex: 1;
+        }
+        .bd-share-card {
+            border-radius: 8px; overflow: hidden;
+            display: flex; flex-direction: column;
+            border: 0.5px solid #d0dae8;
+        }
+        .bd-share-head { padding: 7px 12px; font-size: 10pt; font-weight: 600; flex-shrink: 0; }
+        .bd-share-body { padding: 8px 12px; flex: 1; display: flex; flex-direction: column; gap: 4px; background: #fff; }
+
+        .bd-wrote-row { display: flex; align-items: center; gap: 6px; font-size: 9pt; color: #333; margin-bottom: 4px; font-weight: 500; }
+        .bd-wrote-canvas { border-radius: 4px; background: transparent; box-shadow: 0 0 0 1px rgba(160,175,195,0.45); cursor: crosshair; touch-action: none; width: 100%; height: 60px; display: block; }
+
+        .bd-check-q { font-size: 8.5pt; font-weight: 600; color: #1a2a3a; margin: 4px 0 2px; }
+        .bd-check-opt { display: flex; align-items: flex-start; gap: 5px; font-size: 8pt; color: #444; margin: 2px 0; line-height: 1.5; }
+        .bd-check-opt input[type="checkbox"] { width: 11px; height: 11px; margin-top: 2px; accent-color: #4a7fc1; flex-shrink: 0; cursor: pointer; }
+
+        .bd-promise { border-radius: 6px; padding: 7px 10px; margin-top: auto; flex-shrink: 0; border: 0.5px solid #d0dae8; background: #f4f7fb; }
+        .bd-promise-title { font-size: 8.5pt; font-weight: 600; color: #1a2a3a; margin-bottom: 3px; }
+        .bd-promise-text { font-size: 7.5pt; color: #444; line-height: 1.5; margin-bottom: 2px; }
+        .bd-promise-confirm { font-size: 7pt; color: #888; font-style: italic; margin-bottom: 4px; }
+        .bd-promise-sign { display: block; margin-top: 8px; padding-top: 5px; }
+
+        .bd-sign-canvas-box { border-radius: 4px; background: transparent; box-shadow: 0 0 0 1px rgba(160,175,195,0.45); cursor: crosshair; touch-action: none; display: block; }
+        .bd-clear-sm { font-size: 7pt; color: #aaa; background: none; border: 0.5px solid #ccc; border-radius: 2px; padding: 1px 4px; cursor: pointer; flex-shrink: 0; }
+        .bd-clear-sm:hover { color: #c0392b; border-color: #c0392b; }
+
+        .bd-input { background: transparent; border-radius: 4px; box-shadow: 0 0 0 1px rgba(160,175,195,0.5); padding: 0 8px; height: 26px; font-size: 9.5pt; font-family: inherit; color: #222; box-sizing: border-box; display: inline-block; }
+        textarea.bd-input { height: auto; padding: 5px 8px; display: block; resize: none; line-height: 1.5; background: transparent; box-shadow: 0 0 0 0.5px rgba(0,0,0,0.15); }
+        .bd-input-name { width: 88px; }
+        .bd-input-num  { width: 32px; }
+        .bd-input-zj   { width: 100%; display: block; }
+
+        @media print {
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .toolbar, #submitPanel, .bd-canvas-clear, .bd-clear-sm { display: none !important; }
+            body { background: #fff !important; margin: 0; padding: 0; }
+
+            /* 课堂研学 + 四个练笔/阅读页面：打印时去掉容器阴影和外边距 */
+            #page-ketang, #page-miaoxie, #page-yilun, #page-shiyong, #page-yuedu {
+                margin: 0 !important;
+                box-shadow: none !important;
+                padding: 10mm 14mm 14mm !important;
+            }
+
+            #page-biaoda { display: block !important; margin: 0 !important; padding: 0 !important; }
+            #page-biaoda > div { margin: 0 !important; padding: 0 !important; }
+
+            /* 每页严格 A4，flex列布局 */
+            .bd-page {
+                width: 210mm !important;
+                height: 297mm !important;
+                max-height: 297mm !important;
+                min-height: unset !important;
+                overflow: hidden !important;
+                padding: 6mm 12mm 5mm !important;
+                box-shadow: none !important;
+                margin: 0 !important;
+                margin-top: 0 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                page-break-after: always !important;
+                break-after: page !important;
+                page-break-inside: avoid !important;
+            }
+            .bd-page:last-child {
+                page-break-after: auto !important;
+                break-after: auto !important;
+            }
+
+            /* 第1页：页眉固定，各节撑满 */
+            .bd-page-header { flex-shrink: 0 !important; margin-bottom: 1mm !important; }
+            .bd-alert-row   { flex-shrink: 0 !important; margin-bottom: 2mm !important; font-size: 9pt !important; padding: 5px 12px !important; }
+
+            .bd-sec-row.r1, .bd-sec-row.r2, .bd-sec-row.r3 {
+                flex: 1 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                min-height: 0 !important;
+                margin-bottom: 1.5mm !important;
+            }
+            .bd-sec-head { padding: 4px 12px !important; }
+            .bd-sec-title { font-size: 10pt !important; }
+            .bd-field-label { font-size: 9pt !important; }
+            .bd-sec-row.r4 {
+                flex: 0.55 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                min-height: 0 !important;
+            }
+            .bd-sec-inner {
+                flex: 1 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                min-height: 0 !important;
+                padding: 4px 10px 5px !important;
+            }
+            /* 造句行撑满剩余空间 */
+            .bd-field { flex-shrink: 0 !important; }
+            .bd-field:last-child {
+                flex: 1 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                min-height: 28px !important;
+            }
+            .bd-input-zj {
+                display: block !important;
+                width: 100% !important;
+                flex: 1 !important;
+                min-height: 22px !important;
+                box-shadow: 0 0 0 0.5px rgba(160,175,195,0.6) !important;
+            }
+
+            /* 手写框打印时显示一致的框线 */
+            .bd-canvas-cell {
+                box-shadow: 0 0 0 0.5px rgba(160,175,195,0.6) !important;
+                height: 40px !important;
+            }
+            /* 输入框打印时显示框线 */
+            .bd-input {
+                box-shadow: 0 0 0 0.5px rgba(160,175,195,0.6) !important;
+                background: transparent !important;
+            }
+            textarea.bd-input {
+                box-shadow: 0 0 0 0.5px rgba(160,175,195,0.6) !important;
+            }
+            /* 姓名编号打印无任何效果 */
+            .bd-student-fields input {
+                box-shadow: none !important;
+                background: transparent !important;
+                border: none !important;
+            }
+            input, textarea {
+                box-shadow: none !important;
+                border: none !important;
+                background: transparent !important;
+            }
+            .bd-input {
+                box-shadow: 0 0 0 0.5px rgba(160,175,195,0.6) !important;
+                background: transparent !important;
+            }
+
+            /* 第2页：分享格撑满 */
+            .bd-p2-task { flex-shrink: 0 !important; margin-bottom: 2mm !important; }
+            .bd-share-grid {
+                flex: 1 !important;
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+                grid-template-rows: 1fr 1fr !important;
+                gap: 4px !important;
+            }
+            .bd-share-head { padding: 5px 10px !important; font-size: 9pt !important; }
+            .bd-share-card {
+                display: flex !important;
+                flex-direction: column !important;
+                overflow: hidden !important;
+                page-break-inside: avoid !important;
+            }
+            .bd-share-body {
+                flex: 1 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                padding: 2px 6px !important;
+                overflow: hidden !important;
+            }
+            .bd-promise { margin-top: auto !important; flex-shrink: 0 !important; padding: 2px 5px !important; }
+            .bd-check-opt { font-size: 6.5pt !important; line-height: 1.25 !important; margin: 0; }
+            .bd-check-q { font-size: 7pt !important; margin: 1px 0 !important; }
+            .bd-promise-confirm { font-size: 6pt !important; margin-bottom: 2px !important; }
+            .bd-promise-title { font-size: 7.5pt !important; margin-bottom: 1px !important; }
+            .bd-promise-text { font-size: 6.5pt !important; line-height: 1.3 !important; }
+            .bd-wrote-canvas { box-shadow: 0 0 0 0.5px rgba(160,175,195,0.6) !important; }
+            .bd-sign-canvas-box { box-shadow: 0 0 0 0.5px rgba(160,175,195,0.6) !important; }
+            .bd-wrote-row { flex-shrink: 0 !important; font-size: 8pt !important; margin-bottom: 2px !important; }
+            /* 抄写格打印时统一框线 */
+            .bd-canvas-cell { box-shadow: none !important; border: 0.5px solid rgba(160,175,195,0.6) !important; height: 50px !important; }
+        }
+    </style>
+
+</head>
+<body>
+<div class="page" id="page-biaoda" style="">
+<div style="width:210mm;margin:56px auto 0;">
+
+<div class="bd-page" style="max-width:210mm;background:#fff;min-height:297mm;padding:10mm 14mm 14mm;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
+    <div class="bd-page-header">
+        <div class="bd-header-row">
+            <div class="bd-student-fields">
+                <span>姓名：<input type="text" style="width:88px;background:transparent;box-shadow:0 1px 0 0 rgba(0,0,0,0.3);font-family:inherit;font-size:inherit;color:inherit;padding:0 2px 1px;margin-left:2px;"></span>
+                <span>编号（<input type="text" style="width:36px;background:transparent;font-family:inherit;font-size:inherit;color:inherit;padding:0 2px;text-align:center;">）</span>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
+                <div class="bd-main-title" style="font-size:10.5pt;font-weight:400;"><span contenteditable="false">表达精进学习单</span></div>
+                <div style="font-size:9pt;color:#888;letter-spacing:0.3px;" contenteditable="false">辨析与改正</div>
+            </div>
+        </div>
+        <div class="bd-divider"></div>
+    </div>
+    <div class="bd-alert-row" contenteditable="false">
+        <div style="width:8px;height:8px;border-radius:50%;background:#4a7fc1;flex-shrink:0;"></div>
+        <strong>重要提醒：</strong>找错别字时，不要只写那个字，<strong>一定要写出整个词语！</strong>例如：✗ 在见 → ✓ 再见
+    </div>
+    <div class="bd-sec-row r1">
+        <div class="bd-sec-head"><div class="bd-sec-badge-wrap"><div class="bd-sec-badge">①</div><span class="bd-sec-title" contenteditable="false">错别字 No. 1</span></div></div>
+        <div class="bd-sec-inner">
+            <div class="bd-field"><div class="bd-field-label" contenteditable="false">✗ 写错的词语：</div><div style="position:relative;display:inline-block;width:calc(33.33% - 4px);"><canvas class="bd-canvas-cell wrong" id="bd-wrong-1" width="200" height="60" style="width:100%;display:block;"></canvas><button class="bd-canvas-clear" style="position:absolute;bottom:3px;right:4px;font-size:10pt;padding:0 3px;line-height:1;background:rgba(255,255,255,0.85);border:none;border-radius:3px;" onclick="clearBdRow(['bd-wrong-1'])">⌫</button></div></div>
+            <hr class="bd-field-divider">
+            <div class="bd-field"><div class="bd-field-label" contenteditable="false">✓ 正确的写法（请认真抄写三遍）：</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;box-shadow:0 0 0 1px rgba(160,175,195,0.45);border-radius:5px;overflow:hidden;"><div style="position:relative;"><canvas class="bd-canvas-cell" id="bd-copy-1a" width="200" height="60" style="border-radius:0;box-shadow:inset -1px 0 0 rgba(160,175,195,0.45);width:100%;display:block;"></canvas><button class="bd-canvas-clear" style="position:absolute;bottom:3px;right:6px;font-size:7pt;padding:1px 4px;" onclick="clearBdRow(['bd-copy-1a'])">⌫</button></div><div style="position:relative;"><canvas class="bd-canvas-cell" id="bd-copy-1b" width="200" height="60" style="border-radius:0;box-shadow:inset -1px 0 0 rgba(160,175,195,0.45);width:100%;display:block;"></canvas><button class="bd-canvas-clear" style="position:absolute;bottom:3px;right:6px;font-size:7pt;padding:1px 4px;" onclick="clearBdRow(['bd-copy-1b'])">⌫</button></div><div style="position:relative;"><canvas class="bd-canvas-cell" id="bd-copy-1c" width="200" height="60" style="border-radius:0;box-shadow:none;width:100%;display:block;"></canvas><button class="bd-canvas-clear" style="position:absolute;bottom:3px;right:6px;font-size:7pt;padding:1px 4px;" onclick="clearBdRow(['bd-copy-1c'])">⌫</button></div></div></div>
+            <hr class="bd-field-divider">
+            <div class="bd-field"><div class="bd-field-label" contenteditable="false">✏️ 造句练习：</div><input class="bd-input bd-input-zj" type="text"></div>
+        </div>
+    </div>
+    <div class="bd-sec-row r2">
+        <div class="bd-sec-head"><div class="bd-sec-badge-wrap"><div class="bd-sec-badge">②</div><span class="bd-sec-title" contenteditable="false">错别字 No. 2</span></div></div>
+        <div class="bd-sec-inner">
+            <div class="bd-field"><div class="bd-field-label" contenteditable="false">✗ 写错的词语：</div><div style="position:relative;display:inline-block;width:calc(33.33% - 4px);"><canvas class="bd-canvas-cell wrong" id="bd-wrong-2" width="200" height="60" style="width:100%;display:block;"></canvas><button class="bd-canvas-clear" style="position:absolute;bottom:3px;right:4px;font-size:10pt;padding:0 3px;line-height:1;background:rgba(255,255,255,0.85);border:none;border-radius:3px;" onclick="clearBdRow(['bd-wrong-2'])">⌫</button></div></div>
+            <hr class="bd-field-divider">
+            <div class="bd-field"><div class="bd-field-label" contenteditable="false">✓ 正确的写法（请认真抄写三遍）：</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;box-shadow:0 0 0 1px rgba(160,175,195,0.45);border-radius:5px;overflow:hidden;"><div style="position:relative;"><canvas class="bd-canvas-cell" id="bd-copy-2a" width="200" height="60" style="border-radius:0;box-shadow:inset -1px 0 0 rgba(160,175,195,0.45);width:100%;display:block;"></canvas><button class="bd-canvas-clear" style="position:absolute;bottom:3px;right:6px;font-size:7pt;padding:1px 4px;" onclick="clearBdRow(['bd-copy-2a'])">⌫</button></div><div style="position:relative;"><canvas class="bd-canvas-cell" id="bd-copy-2b" width="200" height="60" style="border-radius:0;box-shadow:inset -1px 0 0 rgba(160,175,195,0.45);width:100%;display:block;"></canvas><button class="bd-canvas-clear" style="position:absolute;bottom:3px;right:6px;font-size:7pt;padding:1px 4px;" onclick="clearBdRow(['bd-copy-2b'])">⌫</button></div><div style="position:relative;"><canvas class="bd-canvas-cell" id="bd-copy-2c" width="200" height="60" style="border-radius:0;box-shadow:none;width:100%;display:block;"></canvas><button class="bd-canvas-clear" style="position:absolute;bottom:3px;right:6px;font-size:7pt;padding:1px 4px;" onclick="clearBdRow(['bd-copy-2c'])">⌫</button></div></div></div>
+            <hr class="bd-field-divider">
+            <div class="bd-field"><div class="bd-field-label" contenteditable="false">✏️ 造句练习：</div><input class="bd-input bd-input-zj" type="text"></div>
+        </div>
+    </div>
+    <div class="bd-sec-row r3">
+        <div class="bd-sec-head"><div class="bd-sec-badge-wrap"><div class="bd-sec-badge">③</div><span class="bd-sec-title" contenteditable="false">错别字 No. 3</span></div></div>
+        <div class="bd-sec-inner">
+            <div class="bd-field"><div class="bd-field-label" contenteditable="false">✗ 写错的词语：</div><div style="position:relative;display:inline-block;width:calc(33.33% - 4px);"><canvas class="bd-canvas-cell wrong" id="bd-wrong-3" width="200" height="60" style="width:100%;display:block;"></canvas><button class="bd-canvas-clear" style="position:absolute;bottom:3px;right:4px;font-size:10pt;padding:0 3px;line-height:1;background:rgba(255,255,255,0.85);border:none;border-radius:3px;" onclick="clearBdRow(['bd-wrong-3'])">⌫</button></div></div>
+            <hr class="bd-field-divider">
+            <div class="bd-field"><div class="bd-field-label" contenteditable="false">✓ 正确的写法（请认真抄写三遍）：</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;box-shadow:0 0 0 1px rgba(160,175,195,0.45);border-radius:5px;overflow:hidden;"><div style="position:relative;"><canvas class="bd-canvas-cell" id="bd-copy-3a" width="200" height="60" style="border-radius:0;box-shadow:inset -1px 0 0 rgba(160,175,195,0.45);width:100%;display:block;"></canvas><button class="bd-canvas-clear" style="position:absolute;bottom:3px;right:6px;font-size:7pt;padding:1px 4px;" onclick="clearBdRow(['bd-copy-3a'])">⌫</button></div><div style="position:relative;"><canvas class="bd-canvas-cell" id="bd-copy-3b" width="200" height="60" style="border-radius:0;box-shadow:inset -1px 0 0 rgba(160,175,195,0.45);width:100%;display:block;"></canvas><button class="bd-canvas-clear" style="position:absolute;bottom:3px;right:6px;font-size:7pt;padding:1px 4px;" onclick="clearBdRow(['bd-copy-3b'])">⌫</button></div><div style="position:relative;"><canvas class="bd-canvas-cell" id="bd-copy-3c" width="200" height="60" style="border-radius:0;box-shadow:none;width:100%;display:block;"></canvas><button class="bd-canvas-clear" style="position:absolute;bottom:3px;right:6px;font-size:7pt;padding:1px 4px;" onclick="clearBdRow(['bd-copy-3c'])">⌫</button></div></div></div>
+            <hr class="bd-field-divider">
+            <div class="bd-field"><div class="bd-field-label" contenteditable="false">✏️ 造句练习：</div><input class="bd-input bd-input-zj" type="text"></div>
+        </div>
+    </div>
+    <div class="bd-sec-row r4">
+        <div class="bd-sec-head"><div class="bd-sec-badge-wrap"><div class="bd-sec-badge">⚠</div><span class="bd-sec-title" contenteditable="false">病句改正 No. 1</span></div></div>
+        <div class="bd-sec-inner">
+            <div class="bd-bingju-grid">
+                <div class="bd-field"><div class="bd-field-label" contenteditable="false">✗ 写错的句子（要写原句）：</div><textarea class="bd-input" style="width:100%;height:52px;"></textarea></div>
+                <div class="bd-field"><div class="bd-field-label" contenteditable="false">✓ 改正后的句子：</div><textarea class="bd-input" style="width:100%;height:52px;"></textarea></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="bd-page" style="max-width:210mm;background:#fff;min-height:297mm;padding:10mm 14mm 14mm;box-shadow:0 1px 4px rgba(0,0,0,0.08);margin-top:48px;">
+    <div class="bd-page-header">
+        <div class="bd-header-row">
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;width:100%;">
+                <div class="bd-main-title" style="font-size:10.5pt;font-weight:400;"><span contenteditable="false">表达精进学习单</span></div>
+                <div style="font-size:9pt;color:#888;letter-spacing:0.3px;" contenteditable="false">分享与巩固</div>
+            </div>
+        </div>
+        <div class="bd-divider"></div>
+    </div>
+    <div class="bd-p2-task" contenteditable="false">📋 请按以下格式，向同学分享你的学习反思，对方确认你清晰说出后才可签名。找 4 位同学，每人分享 1 项内容，获得 4 个签名。</div>
+    <div class="bd-share-grid">
+        <div class="bd-share-card s1" id="share-card-1">
+            <div class="bd-share-head" style="background:#EEF4FB;color:#1a4070;">同学① — 错别字 No. 1</div>
+            <div class="bd-share-body">
+                <div class="bd-wrote-row"><span>✍️ 我把</span><input class="bd-input bd-wrote-text" id="wrote-text-1" style="width:72px;border-radius:4px;" type="text"><span>写成了</span><div style="position:relative;flex:2;min-width:0;"><canvas class="bd-wrote-canvas" id="canvas-wrote-1" width="200" height="60" style="width:100%;display:block;"></canvas><button class="bd-canvas-clear" style="position:absolute;bottom:3px;right:4px;font-size:10pt;padding:0 3px;line-height:1;background:rgba(255,255,255,0.85);border:none;border-radius:3px;" onclick="clearCanvas('canvas-wrote-1')">⌫</button></div></div>
+                <div class="bd-check-q" contenteditable="false">💬 我写错的原因是（勾选一项）：</div>
+                <label class="bd-check-opt"><input type="checkbox" data-group="reason-1" onchange="enforceOneCheck(this)">① 一时疏忽（写的时候没专心）</label>
+                <label class="bd-check-opt"><input type="checkbox" data-group="reason-1" onchange="enforceOneCheck(this)">② 没有复习（上次改完没再看）</label>
+                <label class="bd-check-opt"><input type="checkbox" data-group="reason-1" onchange="enforceOneCheck(this)">③ 查词典出错（拼音拼错或选错字）</label>
+                <label class="bd-check-opt bd-other-opt"><input type="checkbox" class="other-reason-cb" data-card="1" data-group="reason-1" onchange="enforceOneCheck(this);toggleOtherInput(this,'other-reason-4')">④ 其它原因：<input id="other-reason-1" class="bd-input bd-other-input" type="text" disabled="" placeholder="请说明…" style="flex:1;min-width:0;margin-left:4px;border-radius:4px;font-size:8pt;height:20px;padding:0 6px;background:#f8fafc;opacity:0.5;cursor:not-allowed;"></label>
+                <div class="bd-check-q" contenteditable="false">✊ 为了避免再错，下次我一定要（勾选一项）：</div>
+                <label class="bd-check-opt"><input type="checkbox" data-group="action-1" onchange="enforceOneCheck(this)">① 放慢速度，写完后检查一遍</label>
+                <label class="bd-check-opt"><input type="checkbox" data-group="action-1" onchange="enforceOneCheck(this)">② 收进"错字本"，每天看一次，连看3天</label>
+                <label class="bd-check-opt"><input type="checkbox" data-group="action-1" onchange="enforceOneCheck(this)">③ 查词典时弄准拼音，多看几个选项</label>
+                <label class="bd-check-opt bd-other-opt"><input type="checkbox" class="other-action-cb" data-card="1" data-group="action-1" onchange="enforceOneCheck(this);toggleOtherInput(this,'other-action-4')">④ 其它做法：<input id="other-action-1" class="bd-input bd-other-input" type="text" disabled="" placeholder="请说明…" style="flex:1;min-width:0;margin-left:4px;border-radius:4px;font-size:8pt;height:20px;padding:0 6px;background:#f8fafc;opacity:0.5;cursor:not-allowed;"></label>
+                <div class="bd-promise">
+                    <div class="bd-promise-title" contenteditable="false">🗣️ 郑重承诺</div>
+                    <div class="bd-promise-text" contenteditable="false">谢谢你聆听！我不是一个喜欢重复犯错的人！<br>下次再写这个字，我一定不会再错！</div>
+                    <div class="bd-promise-confirm" contenteditable="false">※ 确认对方认真清晰地说出后，才可签名</div>
+                    <div class="bd-promise-sign">
+                        <div style="border:1px solid rgba(160,175,195,0.45);border-radius:5px;overflow:hidden;">
+                            <div style="display:flex;align-items:center;border-bottom:1px solid rgba(160,175,195,0.45);padding:0 8px;">
+                                <span style="font-size:8pt;color:#555;white-space:nowrap;flex-shrink:0;">华文名字：</span>
+                                <input class="bd-input" type="text" style="flex:1;min-width:0;height:28px;font-size:8pt;border-radius:0;box-shadow:none;padding:0 4px;">
+                            </div>
+                            <div style="position:relative;">
+                                <div style="font-size:8pt;color:#555;padding:2px 8px 0;white-space:nowrap;">签名：</div>
+                                <canvas class="bd-sign-canvas-box" id="canvas-sign-1" width="200" height="54" style="width:100%;height:54px;border-radius:0;box-shadow:none;display:block;cursor:crosshair;touch-action:none;"></canvas>
+                                <button class="bd-clear-sm" style="position:absolute;bottom:4px;right:6px;" onclick="clearCanvas('canvas-sign-1')">×</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="bd-share-card s2" id="share-card-2">
+            <div class="bd-share-head" style="background:#EAF6F1;color:#085041;">同学② — 错别字 No. 2</div>
+            <div class="bd-share-body">
+                <div class="bd-wrote-row"><span>✍️ 我把</span><input class="bd-input bd-wrote-text" id="wrote-text-2" style="width:72px;border-radius:4px;" type="text"><span>写成了</span><div style="position:relative;flex:2;min-width:0;"><canvas class="bd-wrote-canvas" id="canvas-wrote-2" width="200" height="60" style="width:100%;display:block;"></canvas><button class="bd-canvas-clear" style="position:absolute;bottom:3px;right:4px;font-size:10pt;padding:0 3px;line-height:1;background:rgba(255,255,255,0.85);border:none;border-radius:3px;" onclick="clearCanvas('canvas-wrote-2')">⌫</button></div></div>
+                <div class="bd-check-q" contenteditable="false">💬 我写错的原因是（勾选一项）：</div>
+                <label class="bd-check-opt"><input type="checkbox" data-group="reason-2" onchange="enforceOneCheck(this)">① 一时疏忽（写的时候没专心）</label>
+                <label class="bd-check-opt"><input type="checkbox" data-group="reason-2" onchange="enforceOneCheck(this)">② 没有复习（上次改完没再看）</label>
+                <label class="bd-check-opt"><input type="checkbox" data-group="reason-2" onchange="enforceOneCheck(this)">③ 查词典出错（拼音拼错或选错字）</label>
+                <label class="bd-check-opt bd-other-opt"><input type="checkbox" class="other-reason-cb" data-card="2" data-group="reason-2" onchange="enforceOneCheck(this);toggleOtherInput(this,'other-reason-4')">④ 其它原因：<input id="other-reason-2" class="bd-input bd-other-input" type="text" disabled="" placeholder="请说明…" style="flex:1;min-width:0;margin-left:4px;border-radius:4px;font-size:8pt;height:20px;padding:0 6px;background:#f8fafc;opacity:0.5;cursor:not-allowed;"></label>
+                <div class="bd-check-q" contenteditable="false">✊ 为了避免再错，下次我一定要（勾选一项）：</div>
+                <label class="bd-check-opt"><input type="checkbox" data-group="action-2" onchange="enforceOneCheck(this)">① 放慢速度，写完后检查一遍</label>
+                <label class="bd-check-opt"><input type="checkbox" data-group="action-2" onchange="enforceOneCheck(this)">② 收进"错字本"，每天看一次，连看3天</label>
+                <label class="bd-check-opt"><input type="checkbox" data-group="action-2" onchange="enforceOneCheck(this)">③ 查词典时弄准拼音，多看几个选项</label>
+                <label class="bd-check-opt bd-other-opt"><input type="checkbox" class="other-action-cb" data-card="2" data-group="action-2" onchange="enforceOneCheck(this);toggleOtherInput(this,'other-action-4')">④ 其它做法：<input id="other-action-2" class="bd-input bd-other-input" type="text" disabled="" placeholder="请说明…" style="flex:1;min-width:0;margin-left:4px;border-radius:4px;font-size:8pt;height:20px;padding:0 6px;background:#f8fafc;opacity:0.5;cursor:not-allowed;"></label>
+                <div class="bd-promise">
+                    <div class="bd-promise-title" contenteditable="false">🗣️ 郑重承诺</div>
+                    <div class="bd-promise-text" contenteditable="false">谢谢你聆听！我不是一个喜欢重复犯错的人！<br>下次再写这个字，我一定不会再错！</div>
+                    <div class="bd-promise-confirm" contenteditable="false">※ 确认对方认真清晰地说出后，才可签名</div>
+                    <div class="bd-promise-sign">
+                        <div style="border:1px solid rgba(160,175,195,0.45);border-radius:5px;overflow:hidden;">
+                            <div style="display:flex;align-items:center;border-bottom:1px solid rgba(160,175,195,0.45);padding:0 8px;">
+                                <span style="font-size:8pt;color:#555;white-space:nowrap;flex-shrink:0;">华文名字：</span>
+                                <input class="bd-input" type="text" style="flex:1;min-width:0;height:28px;font-size:8pt;border-radius:0;box-shadow:none;padding:0 4px;">
+                            </div>
+                            <div style="position:relative;">
+                                <div style="font-size:8pt;color:#555;padding:2px 8px 0;white-space:nowrap;">签名：</div>
+                                <canvas class="bd-sign-canvas-box" id="canvas-sign-2" width="200" height="54" style="width:100%;height:54px;border-radius:0;box-shadow:none;display:block;cursor:crosshair;touch-action:none;"></canvas>
+                                <button class="bd-clear-sm" style="position:absolute;bottom:4px;right:6px;" onclick="clearCanvas('canvas-sign-2')">×</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="bd-share-card s3" id="share-card-3">
+            <div class="bd-share-head" style="background:#FEF8EE;color:#633806;">同学③ — 错别字 No. 3</div>
+            <div class="bd-share-body">
+                <div class="bd-wrote-row"><span>✍️ 我把</span><input class="bd-input bd-wrote-text" id="wrote-text-3" style="width:72px;border-radius:4px;" type="text"><span>写成了</span><div style="position:relative;flex:2;min-width:0;"><canvas class="bd-wrote-canvas" id="canvas-wrote-3" width="200" height="60" style="width:100%;display:block;"></canvas><button class="bd-canvas-clear" style="position:absolute;bottom:3px;right:4px;font-size:10pt;padding:0 3px;line-height:1;background:rgba(255,255,255,0.85);border:none;border-radius:3px;" onclick="clearCanvas('canvas-wrote-3')">⌫</button></div></div>
+                <div class="bd-check-q" contenteditable="false">💬 我写错的原因是（勾选一项）：</div>
+                <label class="bd-check-opt"><input type="checkbox" data-group="reason-3" onchange="enforceOneCheck(this)">① 一时疏忽（写的时候没专心）</label>
+                <label class="bd-check-opt"><input type="checkbox" data-group="reason-3" onchange="enforceOneCheck(this)">② 没有复习（上次改完没再看）</label>
+                <label class="bd-check-opt"><input type="checkbox" data-group="reason-3" onchange="enforceOneCheck(this)">③ 查词典出错（拼音拼错或选错字）</label>
+                <label class="bd-check-opt bd-other-opt"><input type="checkbox" class="other-reason-cb" data-card="3" data-group="reason-3" onchange="enforceOneCheck(this);toggleOtherInput(this,'other-reason-4')">④ 其它原因：<input id="other-reason-3" class="bd-input bd-other-input" type="text" disabled="" placeholder="请说明…" style="flex:1;min-width:0;margin-left:4px;border-radius:4px;font-size:8pt;height:20px;padding:0 6px;background:#f8fafc;opacity:0.5;cursor:not-allowed;"></label>
+                <div class="bd-check-q" contenteditable="false">✊ 为了避免再错，下次我一定要（勾选一项）：</div>
+                <label class="bd-check-opt"><input type="checkbox" data-group="action-3" onchange="enforceOneCheck(this)">① 放慢速度，写完后检查一遍</label>
+                <label class="bd-check-opt"><input type="checkbox" data-group="action-3" onchange="enforceOneCheck(this)">② 收进"错字本"，每天看一次，连看3天</label>
+                <label class="bd-check-opt"><input type="checkbox" data-group="action-3" onchange="enforceOneCheck(this)">③ 查词典时弄准拼音，多看几个选项</label>
+                <label class="bd-check-opt bd-other-opt"><input type="checkbox" class="other-action-cb" data-card="3" data-group="action-3" onchange="enforceOneCheck(this);toggleOtherInput(this,'other-action-4')">④ 其它做法：<input id="other-action-3" class="bd-input bd-other-input" type="text" disabled="" placeholder="请说明…" style="flex:1;min-width:0;margin-left:4px;border-radius:4px;font-size:8pt;height:20px;padding:0 6px;background:#f8fafc;opacity:0.5;cursor:not-allowed;"></label>
+                <div class="bd-promise">
+                    <div class="bd-promise-title" contenteditable="false">🗣️ 郑重承诺</div>
+                    <div class="bd-promise-text" contenteditable="false">谢谢你聆听！我不是一个喜欢重复犯错的人！<br>下次再写这个字，我一定不会再错！</div>
+                    <div class="bd-promise-confirm" contenteditable="false">※ 确认对方认真清晰地说出后，才可签名</div>
+                    <div class="bd-promise-sign">
+                        <div style="border:1px solid rgba(160,175,195,0.45);border-radius:5px;overflow:hidden;">
+                            <div style="display:flex;align-items:center;border-bottom:1px solid rgba(160,175,195,0.45);padding:0 8px;">
+                                <span style="font-size:8pt;color:#555;white-space:nowrap;flex-shrink:0;">华文名字：</span>
+                                <input class="bd-input" type="text" style="flex:1;min-width:0;height:28px;font-size:8pt;border-radius:0;box-shadow:none;padding:0 4px;">
+                            </div>
+                            <div style="position:relative;">
+                                <div style="font-size:8pt;color:#555;padding:2px 8px 0;white-space:nowrap;">签名：</div>
+                                <canvas class="bd-sign-canvas-box" id="canvas-sign-3" width="200" height="54" style="width:100%;height:54px;border-radius:0;box-shadow:none;display:block;cursor:crosshair;touch-action:none;"></canvas>
+                                <button class="bd-clear-sm" style="position:absolute;bottom:4px;right:6px;" onclick="clearCanvas('canvas-sign-3')">×</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="bd-share-card s4" id="share-card-4">
+            <div class="bd-share-head" style="background:#FEF0F4;color:#72243E;">同学④ — 病句 No. 1</div>
+            <div class="bd-share-body">
+                <div style="display:flex;align-items:flex-start;gap:5px;font-size:8.5pt;font-weight:600;color:#222;margin:2px 0;">✗ 我写错的句子是：<textarea class="bd-input" style="flex:1;min-width:0;height:44px;border-radius:4px;resize:none;padding:3px 6px;line-height:1.5;"></textarea></div>
+                <div style="display:flex;align-items:flex-start;gap:5px;font-size:8.5pt;font-weight:600;color:#222;margin:2px 0;">✓ 正确的说法是：<textarea class="bd-input" style="flex:1;min-width:0;height:44px;border-radius:4px;resize:none;padding:3px 6px;line-height:1.5;"></textarea></div>
+                <div class="bd-check-q" contenteditable="false">💬 我写错的原因是（勾选一项）：</div>
+                <label class="bd-check-opt"><input type="checkbox" data-group="reason-4" onchange="enforceOneCheck(this)">① 句子顺序问题 → 重新排，读读顺不顺</label>
+                <label class="bd-check-opt"><input type="checkbox" data-group="reason-4" onchange="enforceOneCheck(this)">② 词语搭配问题 → 查词典，看通常怎么搭配</label>
+                <label class="bd-check-opt"><input type="checkbox" data-group="reason-4" onchange="enforceOneCheck(this)">③ 指代不清或意思不明 → 写清楚指代内容</label>
+                <label class="bd-check-opt bd-other-opt"><input type="checkbox" class="other-reason-cb" data-card="4" data-group="reason-4" onchange="enforceOneCheck(this);toggleOtherInput(this,'other-reason-4')">④ 其它原因：<input id="other-reason-4" class="bd-input bd-other-input" type="text" disabled="" placeholder="请说明…" style="flex:1;min-width:0;margin-left:4px;border-radius:4px;font-size:8pt;height:20px;padding:0 6px;background:#f8fafc;opacity:0.5;cursor:not-allowed;"></label>
+                <div class="bd-check-q" contenteditable="false">✊ 为了避免再错，下次我一定要（勾选一项）：</div>
+                <label class="bd-check-opt"><input type="checkbox" data-group="action-4" onchange="enforceOneCheck(this)">① 不受英文思维影响</label>
+                <label class="bd-check-opt"><input type="checkbox" data-group="action-4" onchange="enforceOneCheck(this)">② 记牢正确搭配，多积累</label>
+                <label class="bd-check-opt"><input type="checkbox" data-group="action-4" onchange="enforceOneCheck(this)">③ 句子写简单些，写短些</label>
+                <label class="bd-check-opt bd-other-opt"><input type="checkbox" class="other-action-cb" data-card="4" data-group="action-4" onchange="enforceOneCheck(this);toggleOtherInput(this,'other-action-4')">④ 其它做法：<input id="other-action-4" class="bd-input bd-other-input" type="text" disabled="" placeholder="请说明…" style="flex:1;min-width:0;margin-left:4px;border-radius:4px;font-size:8pt;height:20px;padding:0 6px;background:#f8fafc;opacity:0.5;cursor:not-allowed;"></label>
+                <div class="bd-promise">
+                    <div class="bd-promise-title" contenteditable="false">🗣️ 郑重承诺</div>
+                    <div class="bd-promise-text" contenteditable="false">谢谢你聆听！我不是一个喜欢重复犯错的人！<br>下次再写这个句子，我一定不会再错！</div>
+                    <div class="bd-promise-confirm" contenteditable="false">※ 确认对方认真清晰地说出后，才可签名</div>
+                    <div class="bd-promise-sign">
+                        <div style="border:1px solid rgba(160,175,195,0.45);border-radius:5px;overflow:hidden;">
+                            <div style="display:flex;align-items:center;border-bottom:1px solid rgba(160,175,195,0.45);padding:0 8px;">
+                                <span style="font-size:8pt;color:#555;white-space:nowrap;flex-shrink:0;">华文名字：</span>
+                                <input class="bd-input" type="text" style="flex:1;min-width:0;height:28px;font-size:8pt;border-radius:0;box-shadow:none;padding:0 4px;">
+                            </div>
+                            <div style="position:relative;">
+                                <div style="font-size:8pt;color:#555;padding:2px 8px 0;white-space:nowrap;">签名：</div>
+                                <canvas class="bd-sign-canvas-box" id="canvas-sign-4" width="200" height="54" style="width:100%;height:54px;border-radius:0;box-shadow:none;display:block;cursor:crosshair;touch-action:none;"></canvas>
+                                <button class="bd-clear-sm" style="position:absolute;bottom:4px;right:6px;" onclick="clearCanvas('canvas-sign-4')">×</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div>
+</div>
+<div id="submitPanel" style="display:flex;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #d0dae8;padding:10px 28px;display:flex;justify-content:center;align-items:center;gap:12px;z-index:1000;">
+    <span id="submitHint" style="font-size:10pt;color:#555;">请确认已填写姓名和编号</span>
+    <button onclick="savePDF()" style="padding:8px 20px;border-radius:6px;border:none;background:#1a4f8a;color:#fff;font-size:11pt;font-family:inherit;cursor:pointer;font-weight:600;">📄 保存 PDF</button>
+    <button onclick="submitWork()" style="padding:8px 28px;border-radius:6px;border:none;background:#1e8449;color:#fff;font-size:11pt;font-family:inherit;cursor:pointer;font-weight:600;">📤 提交作业</button>
+</div>
+<div id="submitModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:2000;justify-content:center;align-items:center;">
+    <div style="background:#fff;border-radius:12px;padding:32px 40px;max-width:360px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+        <div id="modalIcon" style="font-size:40px;margin-bottom:12px;">✅</div>
+        <div id="modalTitle" style="font-size:14pt;font-weight:600;color:#1a2a3a;margin-bottom:8px;">提交成功！</div>
+        <div id="modalMsg" style="font-size:10pt;color:#555;line-height:1.6;margin-bottom:20px;"></div>
+        <button onclick="document.getElementById('submitModal').style.display='none'" style="padding:8px 24px;border-radius:6px;border:none;background:#2e86c1;color:#fff;font-size:10pt;font-family:inherit;cursor:pointer;">确定</button>
+    </div>
+</div>
+<script id="studentMeta">window.STUDENT_META={class:"3G3",assignTitle:"作文语病修改",scriptUrl:"https://script.google.com/macros/s/AKfycbw8oDuT-o89thdu0MF4_JLqLruOisvObk6zWsypeQ_uQ21DK-P49U3DA_KCRuTR7aV3/exec"};var INITIAL_TEMPLATE="biaoda";</script>
+<script>
+    let isEditMode = false;
+    let currentTemplate = 'ketang';
+
+    const ALL_TEMPLATES = ['ketang','miaoxie','yilun','shiyong','yuedu','biaoda'];
+
+    function toggleDropdown() {
+        const menu = document.getElementById('tplMenu');
+        const btn = document.getElementById('tplBtn');
+        menu.classList.toggle('open');
+        btn.classList.toggle('active');
+    }
+
+    document.addEventListener('click', function(e) {
+        const dd = document.getElementById('tplDropdown');
+        if (!dd.contains(e.target)) {
+            document.getElementById('tplMenu').classList.remove('open');
+            document.getElementById('tplBtn').classList.remove('active');
+        }
+    });
+
+    function switchTemplate(name) {
+        ALL_TEMPLATES.forEach(t => {
+            const el = document.getElementById('page-' + t);
+            if (el) el.style.display = (t === name) ? '' : 'none';
+            const opt = document.getElementById('opt-' + t);
+            if (opt) opt.classList.toggle('selected', t === name);
+        });
+        currentTemplate = name;
+        const tplMenu = document.getElementById('tplMenu');
+        if (tplMenu) tplMenu.classList.remove('open');
+        const tplBtn = document.getElementById('tplBtn');
+        if (tplBtn) tplBtn.classList.remove('active');
+        // 每次切换都初始化 canvas（学生版直接打开时也需要）
+        initAllBdCanvases();
+    }
+
+    // ── Canvas 手写 ──
+    function setupCanvas(canvas, lineWidth) {
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        ctx.strokeStyle = '#1a1a1a';
+        ctx.lineWidth = lineWidth || 2.5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        let drawing = false, lastX = 0, lastY = 0;
+
+        function getPos(e) {
+            const r = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / r.width;
+            const scaleY = canvas.height / r.height;
+            if (e.touches) {
+                return [(e.touches[0].clientX - r.left) * scaleX,
+                        (e.touches[0].clientY - r.top) * scaleY];
+            }
+            return [(e.clientX - r.left) * scaleX, (e.clientY - r.top) * scaleY];
+        }
+
+        canvas.addEventListener('mousedown', e => { drawing = true; [lastX, lastY] = getPos(e); });
+        canvas.addEventListener('mousemove', e => {
+            if (!drawing) return;
+            const [x, y] = getPos(e);
+            ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(x, y); ctx.stroke();
+            [lastX, lastY] = [x, y];
+        });
+        canvas.addEventListener('mouseup', () => drawing = false);
+        canvas.addEventListener('mouseleave', () => drawing = false);
+        canvas.addEventListener('touchstart', e => { e.preventDefault(); drawing = true; [lastX, lastY] = getPos(e); }, {passive:false});
+        canvas.addEventListener('touchmove', e => {
+            e.preventDefault();
+            if (!drawing) return;
+            const [x, y] = getPos(e);
+            ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(x, y); ctx.stroke();
+            [lastX, lastY] = [x, y];
+        }, {passive:false});
+        canvas.addEventListener('touchend', () => drawing = false);
+    }
+
+    function clearCanvas(id) {
+        const c = document.getElementById(id);
+        if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height);
+    }
+
+    function clearBdRow(ids) {
+        ids.forEach(id => clearCanvas(id));
+    }
+
+    function initAllBdCanvases() {
+        document.querySelectorAll('.bd-canvas-cell').forEach(c => setupCanvas(c, 2.0));
+        document.querySelectorAll('.bd-sign-canvas').forEach(c => setupCanvas(c, 1.5));
+        document.querySelectorAll('.bd-sign-canvas-box').forEach(c => setupCanvas(c, 1.5));
+        document.querySelectorAll('.bd-wrote-canvas').forEach(c => setupCanvas(c, 1.5));
+    }
+
+    // ── 编辑模式 ──
+    function toggleEdit() {
+        isEditMode = !isEditMode;
+        const btn = document.getElementById('editBtn');
+        btn.textContent = isEditMode ? '💾 完成编辑' : '✏️ 编辑';
+        btn.style.background = isEditMode ? '#e74c3c' : '';
+        document.querySelectorAll('[contenteditable]').forEach(el => {
+            el.contentEditable = isEditMode ? 'true' : 'false';
+        });
+    }
+
+    // ── 保存老师版（完整文件）──
+    function saveTeacher() {
+        const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+        const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        const d = new Date();
+        const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+        a.download = `学习单生成平台_${stamp}.html`;
+        a.click();
+    }
+
+    // ── 另存为学生版 ──
+    function saveAsFile() {
+        const cls   = document.getElementById('classSelect').value;
+        const title = document.getElementById('assignTitle').value.trim();
+        const url   = document.getElementById('scriptUrl').value.trim();
+        if (!cls)   { alert('请先填写班级'); return; }
+        if (!title) { alert('请先填写学习名称'); return; }
+        if (!url)   { alert('请先填入 Apps Script URL'); return; }
+
+        // 提取 <head> 内容
+        const headEl = document.querySelector('head');
+        const headHTML = headEl ? headEl.innerHTML : '';
+
+        // 提取当前模板页面内容（克隆 DOM 节点，安全获取 innerHTML）
+        const pageEl = document.getElementById('page-' + currentTemplate);
+        const pageHTML = pageEl ? pageEl.outerHTML : '';
+
+        // 提取 submitPanel（去除所有 display:none，改为 display:flex）
+        const spEl = document.getElementById('submitPanel');
+        const submitHTML = spEl ? spEl.outerHTML.replace(/display:none/g, 'display:flex') : '';
+
+        // 提取 submitModal（提交结果弹窗）
+        const smEl = document.getElementById('submitModal');
+        const submitModalHTML = smEl ? smEl.outerHTML : '';
+
+        // 提取主 script（只取 body 里第一个 script，含所有函数）
+        const mainScript = document.querySelector('body > script:not([id]):not([src])');
+        const scriptHTML = mainScript ? '<script>' + mainScript.textContent + '<\/script>' : '';
+
+        // 元数据 script
+        const metaHTML = '<script id="studentMeta">window.STUDENT_META={class:' + JSON.stringify(cls) + ',assignTitle:' + JSON.stringify(title) + ',scriptUrl:' + JSON.stringify(url) + '};var INITIAL_TEMPLATE=' + JSON.stringify(currentTemplate) + ';<\/script>';
+
+        // 组装完整 HTML
+        const studentHTML = '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n' + headHTML + '\n</head>\n<body>\n' + pageHTML + '\n' + submitHTML + '\n' + submitModalHTML + '\n' + metaHTML + '\n' + scriptHTML + '\n</body>\n</html>';
+
+        const blob = new Blob([studentHTML], {type:'text/html;charset=utf-8'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = cls + '_' + title + '_学习单.html';
+        a.click();
+    }
+
+        function saveAsFile_OLD() {
+        const cls   = document.getElementById('classSelect').value;
+        const title = document.getElementById('assignTitle').value.trim();
+        const url   = document.getElementById('scriptUrl').value.trim();
+        if (!cls)   { alert('请先填写班级'); return; }
+        if (!title) { alert('请先填写学习名称'); return; }
+        if (!url)   { alert('请先填入 Apps Script URL'); return; }
+
+        // 复制 DOM，注入学生版设置
+        const clone = document.documentElement.cloneNode(true);
+
+        // 隐藏工具栏
+        const tb = clone.querySelector('#toolbar');
+        if (tb) tb.style.display = 'none';
+
+        // 显示提交面板
+        const sp = clone.querySelector('#submitPanel');
+        if (sp) sp.style.display = 'flex';
+
+        // 只显示当前模板页面，隐藏其余页面
+        ['ketang','miaoxie','yilun','shiyong','yuedu','biaoda'].forEach(t => {
+            const pg = clone.querySelector('#page-' + t);
+            if (pg) pg.style.display = (t === currentTemplate) ? '' : 'none';
+        });
+
+        // 嵌入元数据
+        const meta = clone.createElement ? null : clone.ownerDocument;
+        const s = clone.querySelector('#studentMeta') || (() => {
+            const el = document.createElement('script');
+            el.id = 'studentMeta';
+            clone.querySelector('body').appendChild(el);
+            return el;
+        })();
+        s.textContent = `
+            window.STUDENT_META = {
+                class: ${JSON.stringify(cls)},
+                assignTitle: ${JSON.stringify(title)},
+                scriptUrl: ${JSON.stringify(url)}
+            };
+        `;
+
+        // 嵌入当前模板标记，让学生版打开时显示正确模板
+        const tplMeta = clone.querySelector('#currentTplMeta') || (() => {
+            const el = document.createElement('script');
+            el.id = 'currentTplMeta';
+            clone.querySelector('body').appendChild(el);
+            return el;
+        })();
+        tplMeta.textContent = 'var INITIAL_TEMPLATE = ' + JSON.stringify(currentTemplate) + ';';
+        let html = '<!DOCTYPE html>\n' + clone.outerHTML;
+        const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${cls}_${title}_学习单.html`;
+        a.click();
+    }
+
+    // ── 其它原因/做法输入框联动 ──
+    // 同组单选互斥
+    function enforceOneCheck(cb) {
+        if (!cb.checked) return;
+        var group = cb.getAttribute('data-group');
+        if (!group) return;
+        document.querySelectorAll('input[type="checkbox"][data-group="' + group + '"]').forEach(function(el) {
+            if (el !== cb && el.checked) {
+                el.checked = false;
+                // 若是 other-cb，同步禁用其文字输入框
+                var otherId = el.id ? null : null;
+                var label = el.closest('label');
+                if (label && label.classList.contains('bd-other-opt')) {
+                    var inp = label.querySelector('input[type="text"]');
+                    if (inp) {
+                        inp.disabled = true;
+                        inp.value = '';
+                        inp.style.opacity = '0.5';
+                        inp.style.cursor = 'not-allowed';
+                        inp.style.background = '#f8fafc';
+                    }
+                }
+            }
+        });
+    }
+
+    function toggleOtherInput(cb, inputId) {
+        const inp = document.getElementById(inputId);
+        if (!inp) return;
+        inp.disabled = !cb.checked;
+        inp.style.opacity = cb.checked ? '1' : '0.5';
+        inp.style.cursor = cb.checked ? 'text' : 'not-allowed';
+        inp.style.background = cb.checked ? '#fff' : '#f8fafc';
+        if (!cb.checked) inp.value = '';
+    }
+
+    // ── Canvas 是否空白 ──
+    function isCanvasBlank(canvas) {
+        if (!canvas) return true;
+        const ctx = canvas.getContext('2d');
+        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        for (let i = 3; i < data.length; i += 4) {
+            if (data[i] > 0) return false;
+        }
+        return true;
+    }
+
+    // ── 提交作业 ──
+    function submitWork() {
+        const meta = window.STUDENT_META;
+        if (!meta) { alert('此功能仅在学生版中可用'); return; }
+
+        // 收集文字数据
+        const name = document.querySelector('#page-biaoda input[type="text"]')?.value?.trim() || '';
+        const num  = document.querySelectorAll('#page-biaoda input[type="text"]')[1]?.value?.trim() || '';
+
+        if (!name) { showModal('❗', '请先填写姓名', '填写姓名后才可提交。'); return; }
+        if (!num)  { showModal('❗', '请先填写编号', '填写编号后才可提交。'); return; }
+
+        // ── 验证错别字色块（按第一页填了几个来决定）──
+        for (let n = 1; n <= 3; n++) {
+            // 判断第一页是否有这个错别字（canvas 有内容）
+            const p1canvas = document.getElementById('bd-wrong-' + n);
+            const hasP1 = p1canvas && !isCanvasBlank(p1canvas);
+            if (!hasP1) continue; // 这个错别字没填，跳过整个色块
+
+            const card = document.getElementById('share-card-' + n);
+            if (!card) continue;
+
+            // 第二页"我把"文字框
+            const wroteText = document.getElementById('wrote-text-' + n);
+            if (!wroteText || !wroteText.value.trim()) {
+                showModal('❗', `错别字 No.${n} 未完成`, `请填写「我把＿写成了」的文字部分。`); return;
+            }
+
+            // 用 data-group 精准定位当前卡的两组 checkbox
+            const reasonGroup = Array.from(document.querySelectorAll('input[data-group="reason-' + n + '"]'));
+            const actionGroup = Array.from(document.querySelectorAll('input[data-group="action-' + n + '"]'));
+
+            if (!reasonGroup.some(c => c.checked)) {
+                showModal('❗', `错别字 No.${n} 未完成`, `请勾选「我写错的原因是」。`); return;
+            }
+            const otherReasonCb = card.querySelector('.other-reason-cb');
+            if (otherReasonCb && otherReasonCb.checked) {
+                const otherReasonInput = document.getElementById('other-reason-' + n);
+                if (!otherReasonInput || !otherReasonInput.value.trim()) {
+                    showModal('❗', `错别字 No.${n} 未完成`, `请填写「其它原因」的内容。`); return;
+                }
+            }
+
+            if (!actionGroup.some(c => c.checked)) {
+                showModal('❗', `错别字 No.${n} 未完成`, `请勾选「下次我一定要」。`); return;
+            }
+            const otherActionCb = card.querySelector('.other-action-cb');
+            if (otherActionCb && otherActionCb.checked) {
+                const otherActionInput = document.getElementById('other-action-' + n);
+                if (!otherActionInput || !otherActionInput.value.trim()) {
+                    showModal('❗', `错别字 No.${n} 未完成`, `请填写「其它做法」的内容。`); return;
+                }
+            }
+
+            // 签名：华文名字 + canvas
+            const signInputs = card.querySelectorAll('.bd-promise-sign input[type="text"]');
+            if (!signInputs[0] || !signInputs[0].value.trim()) {
+                showModal('❗', `错别字 No.${n} 未完成`, `请填写同学的华文名字。`); return;
+            }
+            const signCanvas = document.getElementById('canvas-sign-' + n);
+            if (!signCanvas || isCanvasBlank(signCanvas)) {
+                showModal('❗', `错别字 No.${n} 未完成`, `请让同学签名。`); return;
+            }
+        }
+
+        // ── 验证病句色块（独立：两个 textarea 有填则全部必填）──
+        const card4 = document.getElementById('share-card-4');
+        if (card4) {
+            const textareas = card4.querySelectorAll('textarea');
+            const bingju1 = textareas[0]?.value?.trim() || '';
+            const bingju2 = textareas[1]?.value?.trim() || '';
+            const hasBingju = bingju1 || bingju2;
+            if (hasBingju) {
+                if (!bingju1) { showModal('❗', '病句 No.1 未完成', '请填写「我写错的句子是」。'); return; }
+                if (!bingju2) { showModal('❗', '病句 No.1 未完成', '请填写「正确的说法是」。'); return; }
+
+                // 用 data-group 直接定位，完全不依赖顺序
+                const reasonCbs4 = Array.from(document.querySelectorAll('input[data-group="reason-4"]'));
+                const actionCbs4 = Array.from(document.querySelectorAll('input[data-group="action-4"]'));
+
+                if (!reasonCbs4.some(c => c.checked)) {
+                    showModal('❗', '病句 No.1 未完成', '请勾选「我写错的原因是」。'); return;
+                }
+                const otherReasonCb4 = card4.querySelector('.other-reason-cb');
+                if (otherReasonCb4?.checked) {
+                    const inp = document.getElementById('other-reason-4');
+                    if (!inp?.value.trim()) { showModal('❗', '病句 No.1 未完成', '请填写「其它原因」的内容。'); return; }
+                }
+                if (!actionCbs4.some(c => c.checked)) {
+                    showModal('❗', '病句 No.1 未完成', '请勾选「下次我一定要」。'); return;
+                }
+                const otherActionCb4 = card4.querySelector('.other-action-cb');
+                if (otherActionCb4?.checked) {
+                    const inp = document.getElementById('other-action-4');
+                    if (!inp?.value.trim()) { showModal('❗', '病句 No.1 未完成', '请填写「其它做法」的内容。'); return; }
+                }
+                const signInputs4 = card4.querySelectorAll('.bd-promise-sign input[type="text"]');
+                if (!signInputs4[0]?.value.trim()) {
+                    showModal('❗', '病句 No.1 未完成', '请填写同学的华文名字。'); return;
+                }
+                const signCanvas4 = document.getElementById('canvas-sign-4');
+                if (!signCanvas4 || isCanvasBlank(signCanvas4)) {
+                    showModal('❗', '病句 No.1 未完成', '请让同学签名。'); return;
+                }
+            }
+        }
+
+        // 收集所有输入
+        const inputs = {};
+        document.querySelectorAll('#page-biaoda input[type="text"], #page-biaoda textarea').forEach((el, i) => {
+            inputs['field_' + i] = el.value;
+        });
+        document.querySelectorAll('#page-biaoda input[type="checkbox"]').forEach((el, i) => {
+            inputs['check_' + i] = el.checked;
+        });
+
+        // 收集 Canvas（PNG 完整画质），跳过空白
+        const canvases = {};
+        document.querySelectorAll('#page-biaoda canvas').forEach(canvas => {
+            if (!canvas.id || isCanvasBlank(canvas)) return;
+            canvases[canvas.id] = canvas.toDataURL('image/png');
+        });
+
+        const submitTime = new Date().toLocaleString('zh-SG');
+
+        const payload = {
+            type: 'worksheet',
+            grade: 'worksheet_' + meta.class,
+            class: meta.class,
+            assignTitle: meta.assignTitle,
+            studentName: name,
+            studentNum: num,
+            submitTime,
+            inputs,
+            canvases
+        };
+
+        // 提示提交中
+        const hint = document.getElementById('submitHint');
+        hint.textContent = '提交中…';
+
+        fetch(meta.scriptUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        })
+        .then(() => {
+            hint.textContent = '✅ 已提交';
+            showModal('✅', '提交成功！', name + ' 同学的作业已提交到「' + meta.assignTitle + '」。');
+        })
+        .catch(() => {
+            hint.textContent = '请确认已填写姓名和编号';
+            showModal('❌', '提交失败', '网络错误，请检查网络连接后重试。\n如果问题持续，请截图发给老师。');
+        });
+    }
+
+    // ── 保存 PDF（学生端）──
+    function savePDF() {
+        const meta = window.STUDENT_META;
+        const name = document.querySelector('#page-biaoda input[type="text"]')?.value?.trim() || '同学';
+        // 隐藏提交面板再打印，打印完恢复
+        const panel = document.getElementById('submitPanel');
+        if (panel) panel.style.display = 'none';
+        const origTitle = document.title;
+        const safeTitle = meta ? meta.assignTitle.replace(/[^\w\u4e00-\u9fff]/g,'_') : '学习单';
+        document.title = name.replace(/[^\w\u4e00-\u9fff]/g,'_') + '_' + safeTitle;
+        window.print();
+        document.title = origTitle;
+        setTimeout(function() {
+            if (panel) panel.style.display = 'flex';
+        }, 500);
+    }
+
+    function saveLocalJSON() {
+        const meta = window.STUDENT_META;
+
+        const name = document.querySelector('#page-biaoda input[type="text"]')?.value?.trim() || '未知同学';
+        const num  = document.querySelectorAll('#page-biaoda input[type="text"]')[1]?.value?.trim() || '';
+
+        const inputs = {};
+        document.querySelectorAll('#page-biaoda input[type="text"], #page-biaoda textarea').forEach((el, i) => {
+            inputs['field_' + i] = el.value;
+        });
+        document.querySelectorAll('#page-biaoda input[type="checkbox"]').forEach((el, i) => {
+            inputs['check_' + i] = el.checked;
+        });
+
+        const canvases = {};
+        document.querySelectorAll('#page-biaoda canvas').forEach(canvas => {
+            if (canvas.id) canvases[canvas.id] = canvas.toDataURL('image/png');
+        });
+
+        const payload = {
+            type: 'worksheet',
+            grade: 'worksheet_' + (meta ? meta.class : ''),
+            class: meta ? meta.class : '',
+            assignTitle: meta ? meta.assignTitle : '',
+            studentName: name,
+            studentNum: num,
+            submitTime: new Date().toLocaleString('zh-SG'),
+            inputs,
+            canvases
+        };
+
+        const json = JSON.stringify(payload);
+        const blob = new Blob([json], {type: 'application/json;charset=utf-8'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        const safeName = name.replace(/[^\w\u4e00-\u9fff]/g, '_');
+        const title = meta ? meta.assignTitle.replace(/[^\w\u4e00-\u9fff]/g, '_') : '作业';
+        a.download = safeName + '_' + title + '.json';
+        a.click();
+    }
+
+    function showModal(icon, title, msg) {
+        document.getElementById('modalIcon').textContent = icon;
+        document.getElementById('modalTitle').textContent = title;
+        document.getElementById('modalMsg').textContent = msg;
+        document.getElementById('submitModal').style.display = 'flex';
+    }
+
+    // ── 打印 ──
+    function printPage() {
+        if (isEditMode) toggleEdit();
+        window.print();
+    }
+
+    // 初始化
+    switchTemplate((typeof INITIAL_TEMPLATE !== 'undefined' ? INITIAL_TEMPLATE : null) || currentTemplate || 'ketang');
+
+    // 记住 Apps Script URL
+    const _urlEl = document.getElementById('scriptUrl');
+    if (_urlEl) {
+        const _saved = localStorage.getItem('biaoda_script_url');
+        if (_saved) _urlEl.value = _saved;
+        _urlEl.addEventListener('change', () => {
+            localStorage.setItem('biaoda_script_url', _urlEl.value.trim());
+        });
+        _urlEl.addEventListener('blur', () => {
+            localStorage.setItem('biaoda_script_url', _urlEl.value.trim());
+        });
+    }
+    // ── 导入学生数据 ──
+    function importStudentData(event) {
+        const files = Array.from(event.target.files);
+        if (!files.length) return;
+        event.target.value = "";
+        const results = [];
+        let loaded = 0;
+        files.forEach(function(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (Array.isArray(data)) data.forEach(function(d){ results.push(d); });
+                    else results.push(data);
+                } catch(err) {
+                    alert("文件格式错误：" + file.name);
+                }
+                loaded++;
+                if (loaded === files.length) showImportedData(results);
+            };
+            reader.readAsText(file, "utf-8");
+        });
+    }
+
+    function showImportedData(records) {
+        const existing = document.getElementById("importDataOverlay");
+        if (existing) existing.remove();
+
+        const overlay = document.createElement("div");
+        overlay.id = "importDataOverlay";
+        overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:5000;overflow-y:auto;display:flex;justify-content:center;padding:32px 16px;";
+
+        const panel = document.createElement("div");
+        panel.style.cssText = "background:#fff;border-radius:12px;padding:28px 32px;width:100%;max-width:900px;height:fit-content;position:relative;";
+
+        if (!records.length) {
+            panel.innerHTML = "<button onclick=\"document.getElementById('importDataOverlay').remove()\" style=\"position:absolute;top:16px;right:20px;background:#f1f5f9;border:none;width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer;\">×</button><p style=\"color:#888;text-align:center;padding:40px;\">没有找到学生数据</p>";
+        } else {
+            const grouped = {};
+            records.forEach(function(r) {
+                const key = (r.assignTitle || "未命名") + " — " + (r.class || "");
+                if (!grouped[key]) grouped[key] = [];
+                grouped[key].push(r);
+            });
+
+            let html = "<button onclick=\"document.getElementById('importDataOverlay').remove()\" style=\"position:absolute;top:16px;right:20px;background:#f1f5f9;border:none;width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer;\">×</button>";
+            html += "<h2 style=\"font-size:14pt;font-weight:700;color:#134e4a;margin-bottom:20px;\">📂 完整备份（" + records.length + " 份）</h2>";
+
+            Object.keys(grouped).forEach(function(grpKey) {
+                const grpRecords = grouped[grpKey];
+                html += "<div style=\"margin-bottom:28px;\">";
+                html += "<div style=\"font-size:11pt;font-weight:700;color:#1e293b;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #e2e8f0;\">📋 " + grpKey + "（" + grpRecords.length + " 人）</div>";
+                html += "<table style=\"width:100%;border-collapse:collapse;font-size:9.5pt;\">";
+                html += "<thead><tr style=\"background:#f1f5f9;\"><th style=\"padding:8px 10px;text-align:left;border:1px solid #e2e8f0;\">#</th><th style=\"padding:8px 10px;text-align:left;border:1px solid #e2e8f0;\">姓名</th><th style=\"padding:8px 10px;text-align:left;border:1px solid #e2e8f0;\">编号</th><th style=\"padding:8px 10px;text-align:left;border:1px solid #e2e8f0;\">提交时间</th><th style=\"padding:8px 10px;text-align:center;border:1px solid #e2e8f0;\">操作</th></tr></thead><tbody>";
+
+                grpRecords.forEach(function(r, idx) {
+                    // Store record data as JSON in a data attribute
+                    const dataAttr = encodeURIComponent(JSON.stringify(r));
+
+                    html += "<tr>";
+                    html += "<td style=\"padding:7px 10px;border:1px solid #e2e8f0;color:#94a3b8;\">" + (idx+1) + "</td>";
+                    html += "<td style=\"padding:7px 10px;border:1px solid #e2e8f0;font-weight:600;color:#134e4a;\">" + (r.studentName || "—") + "</td>";
+                    html += "<td style=\"padding:7px 10px;border:1px solid #e2e8f0;color:#475569;\">" + (r.studentNum || "—") + "</td>";
+                    html += "<td style=\"padding:7px 10px;border:1px solid #e2e8f0;color:#64748b;\">" + (r.submitTime || "—") + "</td>";
+                    html += "<td style=\"padding:7px 10px;border:1px solid #e2e8f0;text-align:center;\">";
+                    html += "<button onclick=\"restoreStudentWork(this)\" data-record=\"" + dataAttr + "\" style=\"background:#0f6e56;color:#fff;border:none;border-radius:4px;padding:4px 14px;cursor:pointer;font-size:8.5pt;\">查看 / 打印</button>";
+                    html += "</td></tr>";
+                });
+                html += "</tbody></table></div>";
+            });
+            panel.innerHTML = html;
+        }
+
+        overlay.appendChild(panel);
+        document.body.appendChild(overlay);
+    }
+
+    function restoreStudentWork(btn) {
+        var r = JSON.parse(decodeURIComponent(btn.getAttribute("data-record")));
+
+        var overlay = document.getElementById("importDataOverlay");
+        if (overlay) overlay.remove();
+
+        switchTemplate("biaoda");
+
+        // 还原文字输入
+        if (r.inputs) {
+            var inputEls = document.querySelectorAll('#page-biaoda input[type="text"], #page-biaoda textarea');
+            inputEls.forEach(function(el, i) {
+                var val = r.inputs["field_" + i];
+                if (val !== undefined) el.value = val;
+            });
+            var checkEls = document.querySelectorAll('#page-biaoda input[type="checkbox"]');
+            checkEls.forEach(function(el, i) {
+                var val = r.inputs["check_" + i];
+                if (val !== undefined) el.checked = val;
+            });
+        }
+
+        // 还原手写
+        var canvases = (r.canvases && Object.keys(r.canvases).length > 0) ? r.canvases : null;
+        if (canvases) {
+            var ids = Object.keys(canvases);
+            var done = 0;
+            requestAnimationFrame(function() {
+                requestAnimationFrame(function() {
+                    ids.forEach(function(id) {
+                        var canvas = document.getElementById(id);
+                        var dataUrl = canvases[id];
+                        if (!canvas || !dataUrl || dataUrl.length < 1500) {
+                            done++; if (done === ids.length) showRestoreDone(); return;
+                        }
+                        var img = new Image();
+                        img.onload = function() {
+                            var ctx = canvas.getContext("2d");
+                            ctx.clearRect(0, 0, canvas.width, canvas.height);
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                            done++; if (done === ids.length) showRestoreDone();
+                        };
+                        img.onerror = function() { done++; if (done === ids.length) showRestoreDone(); };
+                        img.src = dataUrl;
+                    });
+                    if (ids.length === 0) showRestoreDone();
+                });
+            });
+        } else {
+            setTimeout(showRestoreDone, 300);
+        }
+
+        function showRestoreDone() {
+            var note = document.createElement("div");
+            note.style.cssText = "position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#1e8449;color:#fff;padding:10px 28px;border-radius:8px;font-size:11pt;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.2);";
+            note.textContent = "✅ 数据已还原";
+            document.body.appendChild(note);
+            setTimeout(function() {
+                if (note.parentNode) note.parentNode.removeChild(note);
+            }, 1800);
+        }
+    }
+
+</script>
+</body>
+</html>
